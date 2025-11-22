@@ -5,6 +5,32 @@
   <meta charset="UTF-8" />
   <title>สรุปงานวันนี้</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ตัวอย่าง CSS สำหรับตารางและสถานะ */
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    .summary-table th, .summary-table td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    .summary-table th {
+      background-color: #f4f4f4;
+    }
+    .done {
+      color: green;
+      font-weight: bold;
+    }
+    .notdone {
+      color: red;
+    }
+    .partial {
+      color: orange;
+    }
+  </style>
 </head>
 
 <body>
@@ -53,12 +79,14 @@
     const dateInput = document.getElementById("summaryDate");
     const summaryBox = document.getElementById("summaryContainer");
 
+    // ตั้งค่าวันที่เป็นวันที่ปัจจุบัน
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     dateInput.value = `${year}-${month}-${day}`;
 
+    // โหลดข้อมูลจาก Firestore
     async function loadData() {
       const snapshot = await db.collection('workData').get();
       const data = {};
@@ -68,6 +96,7 @@
       return data;
     }
 
+    // แสดงผลสรุปงาน
     async function renderSummary() {
       const day = dateInput.value;
       const data = await loadData();
@@ -75,7 +104,12 @@
 
       const employees = ["ดา", "บีม", "เมย์"];
 
-      let html = `<h2>สรุปงานวันที่ ${day}</h2>`;
+      // แปลงวันที่เป็นรูปแบบไทย เช่น 23 พ.ย. 2568
+      const dateObj = new Date(day);
+      const options = { day: 'numeric', month: 'short', year: 'numeric' };
+      const formattedDate = dateObj.toLocaleDateString('th-TH', options);
+
+      let html = `<h2>สรุปงานวันที่ ${formattedDate}</h2>`;
       html += `<table class="summary-table"><thead><tr><th>งาน</th>`;
 
       employees.forEach(emp => {
@@ -112,6 +146,7 @@
       summaryBox.innerHTML = html;
     }
 
+    // เรียกฟังก์ชันตอนโหลดหน้าและเมื่อเปลี่ยนวันที่
     document.addEventListener("DOMContentLoaded", renderSummary);
     dateInput.addEventListener("change", renderSummary);
 
