@@ -11,33 +11,7 @@
 
   <!-- Custom CSS -->
   <link rel="stylesheet" href="style.css" />
-  <style>
-    #toast {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      max-width: 90vw;
-      padding: 12px 20px;
-      background-color: #198754;
-      color: white;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-      font-weight: 600;
-      font-size: 16px;
-      opacity: 0;
-      pointer-events: none;
-      transform: translateY(-20px);
-      transition: opacity 0.5s ease, transform 0.5s ease;
-      z-index: 1050;
-      word-wrap: break-word;
-    }
-
-    #toast.show {
-      opacity: 1;
-      pointer-events: auto;
-      transform: translateY(0);
-    }
-  </style>
+  
 </head>
 
 <body>
@@ -124,13 +98,13 @@
       <p class="text-muted mt-3 mb-0">ข้อมูลถูกเก็บใน Local Storage (แยกตามวัน)</p>
     </div>
 
-    <h2 class="mb-3">งานของแต่ละคน</h2>
+    <h2 id="individualTitle" class="mb-3">งานของแต่ละคน</h2>
     <div id="individualContainer" class="d-flex flex-wrap gap-3 mb-5"></div>
 
-    <h2 class="mb-3">ตารางสรุปงานของวันที่เลือก</h2>
+    <h2 id="summaryTitle" class="mb-3">ตารางสรุปงานของวันที่เลือก</h2>
     <div id="summaryContainer" class="table-responsive mb-5"></div>
 
-    <h2 class="mb-3">ตารางสรุปงานของเมื่อวาน</h2>
+    <h2 id="yesterdayTitle" class="mb-3">ตารางสรุปงานของเมื่อวาน</h2>
     <div id="yesterdaySummaryContainer" class="table-responsive"></div>
   </div>
 
@@ -151,7 +125,6 @@
       "รดน้ำต้นไม้",
       "เคาน์เตอร์หน้าร้านซัก",
       "ห้องซัก"
-
     ];
 
     function loadData() {
@@ -180,6 +153,17 @@
       return `${year}-${month}-${day}`;
     }
 
+    // ฟังก์ชันแปลงวันที่เป็นรูปแบบ "23 พ.ย. 2568"
+    function formatThaiDate(date) {
+      const day = date.getDate();
+      const monthNames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
+        "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."
+      ];
+      const month = monthNames[date.getMonth()];
+      const year = date.getFullYear() + 543; // แปลงเป็นปี พ.ศ.
+      return `${day} ${month} ${year}`;
+    }
+
     dateInput.value = getLocalDateISO();
 
     function deleteEmployeeData(emp) {
@@ -192,6 +176,7 @@
         renderIndividualTables();
         renderSummaryTable();
         renderYesterdaySummaryTable();
+        updateSummaryTitles();
       }
     }
 
@@ -250,9 +235,9 @@
         employees.forEach(emp => {
           const doneTasks = todayData[emp] || [];
           if (doneTasks.includes(task)) {
-            html += `<td class="done"></td>`; // แสดงไอคอน ✅ ผ่าน CSS
+            html += `<td class="done"></td>`; // แสดงไอคอน ✓ ผ่าน CSS
           } else {
-            html += `<td class="notdone"></td>`; // แสดงไอคอน ❌ ผ่าน CSS
+            html += `<td class="notdone"></td>`; // แสดงไอคอน ✗ ผ่าน CSS
           }
         });
         html += `</tr>`;
@@ -288,9 +273,9 @@
         employees.forEach(emp => {
           const doneTasks = yesterdayData[emp] || [];
           if (doneTasks.includes(task)) {
-            html += `<td class="done"></td>`; // แสดงไอคอน ✅ ผ่าน CSS
+            html += `<td class="done"></td>`; // แสดงไอคอน ✓ ผ่าน CSS
           } else {
-            html += `<td class="notdone"></td>`; // แสดงไอคอน ❌ ผ่าน CSS
+            html += `<td class="notdone"></td>`; // แสดงไอคอน ✗ ผ่าน CSS
           }
         });
         html += `</tr>`;
@@ -299,6 +284,16 @@
       html += `</tbody></table>`;
 
       yesterdaySummaryContainer.innerHTML = html;
+    }
+
+    // เพิ่มฟังก์ชันอัปเดตหัวข้อวันที่แสดงวันที่แบบไทย
+    function updateSummaryTitles() {
+      const selectedDate = new Date(dateInput.value);
+      const yesterdayDate = new Date(selectedDate);
+      yesterdayDate.setDate(selectedDate.getDate() - 1);
+
+      document.getElementById('summaryTitle').textContent = `ตารางสรุปงานวันนี้ ${formatThaiDate(selectedDate)}`;
+      document.getElementById('yesterdayTitle').textContent = `ตารางสรุปงานเมื่อวาน (${formatThaiDate(yesterdayDate)})`;
     }
 
     function showToast(message, bgColor = '#198754') {
@@ -325,7 +320,9 @@
       }
 
       const done = [];
-      checkboxes.forEach(cb => { if (cb.checked) done.push(cb.value); });
+      checkboxes.forEach(cb => {
+        if (cb.checked) done.push(cb.value);
+      });
 
       const d = loadData();
       if (!d[day]) d[day] = {};
@@ -338,6 +335,7 @@
       renderIndividualTables();
       renderSummaryTable();
       renderYesterdaySummaryTable();
+      updateSummaryTitles();
 
       showToast("บันทึกงานเรียบร้อยแล้ว", '#198754');
     }
@@ -346,12 +344,14 @@
       renderIndividualTables();
       renderSummaryTable();
       renderYesterdaySummaryTable();
+      updateSummaryTitles();
     });
 
     dateInput.addEventListener('change', () => {
       renderIndividualTables();
       renderSummaryTable();
       renderYesterdaySummaryTable();
+      updateSummaryTitles();
     });
 
     saveBtn.addEventListener('click', saveTasks);
