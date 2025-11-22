@@ -371,5 +371,24 @@ table.summary-table tbody tr:hover td {
     margin-bottom: 12px;
   }
 
+#toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background-color: #28a745;
+  color: white;
+  padding: 15px 25px;
+  border-radius: 5px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+#toast.show {
+  opacity: 1;
+  pointer-events: auto;
+}
 
 }
