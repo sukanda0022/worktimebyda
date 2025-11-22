@@ -14,6 +14,7 @@
   <!-- Firebase compat SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
   <style>
     /* CSS สำหรับไอคอน ✅ และ ❌ */
     .done {
@@ -29,6 +30,29 @@
       width: 24px;
       height: 24px;
       margin: auto;
+    }
+
+    /* Toast container */
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      min-width: 250px;
+      padding: 12px 20px;
+      background-color: #198754; /* สีเขียว Bootstrap */
+      color: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      font-weight: 600;
+      font-size: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease-in-out;
+      z-index: 1050; /* สูงกว่า modal ของ bootstrap */
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
     }
   </style>
 </head>
@@ -124,6 +148,9 @@
     <h2 id="yesterdaySummaryTitle" class="mb-3">ตารางสรุปงานของเมื่อวาน</h2>
     <div id="yesterdaySummaryContainer" class="table-responsive"></div>
   </div>
+
+  <!-- Toast Notification -->
+  <div id="toast"></div>
 
   <!-- Bootstrap 5 JS Bundle (Popper + JS) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -348,12 +375,29 @@
       yesterdaySummaryContainer.innerHTML = html;
     }
 
+    function showToast(message, bgColor = '#198754') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.style.backgroundColor = bgColor;
+      toast.classList.add('show');
+
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
     async function saveTasks() {
       const employee = employeeSelect.value;
       const day = dateInput.value;
 
-      if (!day) return alert("กรุณาเลือกวันที่");
-      if (!employee) return alert("กรุณาเลือกพนักงาน");
+      if (!day) {
+        showToast("กรุณาเลือกวันที่", '#dc3545'); // สีแดงแจ้งเตือน
+        return;
+      }
+      if (!employee) {
+        showToast("กรุณาเลือกพนักงาน", '#dc3545'); // สีแดงแจ้งเตือน
+        return;
+      }
 
       const done = [];
       checkboxes.forEach(cb => { if (cb.checked) done.push(cb.value); });
@@ -365,42 +409,52 @@
 
         await saveData(d);
 
-        alert("บันทึกงานเรียบร้อยแล้ว"); // <-- เพิ่มตรงนี้แจ้งเตือน
-
-        // ไม่ล้าง checkbox หรือ reset employeeSelect เพื่อให้สถานะอยู่เหมือนเดิม
+        showToast("บันทึกงานเรียบร้อยแล้ว"); // สีเขียว
 
         await renderIndividualTables();
         await renderSummaryTable();
         await renderYesterdaySummaryTable();
       } catch (error) {
         console.error(error);
-        alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+        showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล", '#dc3545'); // สีแดง
       }
     }
 
-    window.addEventListener('DOMContentLoaded', async () => {
-      await renderIndividualTables();
+    // กดดูสรุปงานของวันที่เลือก
+    async function goToSummary() {
       await renderSummaryTable();
       await renderYesterdaySummaryTable();
-    });
+    }
 
+    // event listeners
+    saveBtn.addEventListener('click', saveTasks);
+    goSummaryBtn.addEventListener('click', goToSummary);
+
+    // เมื่อเปลี่ยนวันที่ ให้โหลดข้อมูลอัตโนมัติและตั้งค่า checkbox/ตาราง
     dateInput.addEventListener('change', async () => {
       await renderIndividualTables();
       await renderSummaryTable();
       await renderYesterdaySummaryTable();
     });
 
+    // เมื่อเปลี่ยนพนักงาน ให้ตั้งค่า checkbox ตามข้อมูลที่บันทึกไว้
     employeeSelect.addEventListener('change', async () => {
+      const data = await loadData();
+      const day = dateInput.value;
+      const emp = employeeSelect.value;
+      if (day && emp && data[day] && data[day][emp]) {
+        setCheckboxes(data[day][emp]);
+      } else {
+        checkboxes.forEach(cb => cb.checked = false);
+      }
+    });
+
+    // โหลดข้อมูลและแสดงผลตอนเปิดหน้า
+    (async () => {
       await renderIndividualTables();
-    });
-
-    saveBtn.addEventListener('click', async () => {
-      await saveTasks();
-    });
-
-    goSummaryBtn.addEventListener('click', () => {
-      window.location.href = "summary.html";
-    });
+      await renderSummaryTable();
+      await renderYesterdaySummaryTable();
+    })();
   </script>
 </body>
 </html>
