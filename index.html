@@ -358,17 +358,24 @@
       const done = [];
       checkboxes.forEach(cb => { if (cb.checked) done.push(cb.value); });
 
-      const d = await loadData();
-      if (!d[day]) d[day] = {};
-      d[day][employee] = done;
+      try {
+        const d = await loadData();
+        if (!d[day]) d[day] = {};
+        d[day][employee] = done;
 
-      await saveData(d);
+        await saveData(d);
 
-      // **ไม่ล้าง checkbox หรือ reset employeeSelect เพื่อให้สถานะอยู่เหมือนเดิม**
+        alert("บันทึกงานเรียบร้อยแล้ว"); // <-- เพิ่มตรงนี้แจ้งเตือน
 
-      await renderIndividualTables();
-      await renderSummaryTable();
-      await renderYesterdaySummaryTable();
+        // ไม่ล้าง checkbox หรือ reset employeeSelect เพื่อให้สถานะอยู่เหมือนเดิม
+
+        await renderIndividualTables();
+        await renderSummaryTable();
+        await renderYesterdaySummaryTable();
+      } catch (error) {
+        console.error(error);
+        alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      }
     }
 
     window.addEventListener('DOMContentLoaded', async () => {
